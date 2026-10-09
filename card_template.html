@@ -1,0 +1,133 @@
+<div class="test-card {{STATUS_CLASS}}" data-status="{{STATUS_CLASS}}" data-route="{{ROUTE_NAME}}" data-device="{{DEVICE}}">
+    <div class="card-header">
+        <div class="header-main">
+            <span class="status-pill status-{{STATUS_CLASS}}">{{STATUS_LABEL}}</span>
+            <span class="device-pill {{DEVICE_CLASS}}">{{DEVICE}}</span>
+            <span class="route-title" title="{{ROUTE_PATH}}">{{ROUTE_PATH}}</span>
+        </div>
+        <div class="header-metrics">
+            <span class="metric-item"><strong>Diff:</strong> {{MISMATCH_PERCENT}}%</span>
+            <span class="metric-item"><strong>Blocks:</strong> {{BLOCK_COUNT}}</span>
+            <span class="metric-item"><strong>Render:</strong> {{TOTAL_TIME}}s</span>
+        </div>
+    </div>
+
+    <div class="card-toolbar">
+        <div class="view-toggles">
+            <button type="button" class="view-btn active" onclick="switchCardView(this, 'side-by-side')">Side-by-Side (Sync)</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'split-swipe')">Swipe Split</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'flicker')">Flicker Toggle</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'diff-only')">Diff Only</button>
+        </div>
+
+        <!-- Swipe Mode Selector (Prod vs Stg OR Diff vs Stg) -->
+        <div class="swipe-mode-select" style="display: none;">
+            <button type="button" class="sub-pill active" onclick="setSwipeLayer(this, 'prod')">Prod ↔ Stg</button>
+            <button type="button" class="sub-pill" onclick="setSwipeLayer(this, 'diff')">Diff ↔ Stg</button>
+        </div>
+
+        <div class="zoom-controls">
+            <span class="zoom-hint">Drag box to zoom (Esc or click to reset)</span>
+            <button type="button" class="view-btn btn-reset-zoom" onclick="resetCardZoom(this.closest('.test-card'))">Reset Zoom</button>
+        </div>
+        <div class="external-links">
+            <a href="{{PROD_IMAGE_PATH}}" target="_blank" class="img-link">Prod PNG</a>
+            <a href="{{STG_IMAGE_PATH}}" target="_blank" class="img-link">Staging PNG</a>
+            <a href="{{DIFF_IMAGE_PATH}}" target="_blank" class="img-link">Diff PNG</a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <!-- MODE 1: 3-Column Synchronized Side-by-Side -->
+        <div class="viewport-mode mode-side-by-side active-view">
+            <div class="comparison-grid">
+                <div class="image-column">
+                    <div class="column-header">Production (Reference)</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="{{PROD_IMAGE_PATH}}" loading="lazy" alt="Production Screenshot" />
+                    </div>
+                </div>
+                <div class="image-column">
+                    <div class="column-header">Staging (Candidate)</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="{{STG_IMAGE_PATH}}" loading="lazy" alt="Staging Screenshot" />
+                    </div>
+                </div>
+                <div class="image-column">
+                    <div class="column-header">Pixel Diff Overlay</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="{{DIFF_IMAGE_PATH}}" loading="lazy" alt="Pixel Difference" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 2: Scrollable Swipe Split Slider -->
+        <div class="viewport-mode mode-split-swipe">
+            <div class="swipe-viewport-frame">
+                <!-- Pinned Static Badges (Left = Prod, Right = Staging) -->
+                <div class="swipe-indicator-bar">
+                    <span class="swipe-indicator indicator-left">
+                        <span class="indicator-dot"></span>
+                        <span class="indicator-text js-overlay-label">Production (Left)</span>
+                    </span>
+                    <span class="swipe-indicator indicator-right">
+                        <span class="indicator-dot"></span>
+                        <span>Staging (Right)</span>
+                    </span>
+                </div>
+
+                <div class="swipe-scroll-wrap">
+                    <div class="swipe-container">
+                        <!-- Underlay / Right side: STAGING -->
+                        <div class="swipe-image-base">
+                            <img src="{{STG_IMAGE_PATH}}" loading="lazy" alt="Staging Base" />
+                        </div>
+
+                        <!-- Clipped Overlay / Left side: PRODUCTION -->
+                        <div class="swipe-image-overlay">
+                            <img class="swipe-overlay-img"
+                                 src="{{PROD_IMAGE_PATH}}"
+                                 data-prod="{{PROD_IMAGE_PATH}}"
+                                 data-diff="{{DIFF_IMAGE_PATH}}"
+                                 loading="lazy"
+                                 alt="Comparison Overlay" />
+                        </div>
+
+                        <!-- Draggable Vertical Line + Slider Circle -->
+                        <div class="swipe-handle">
+                            <div class="handle-line"></div>
+                            <div class="handle-circle">&#x2194;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 3: Flicker / Toggle Compare -->
+        <div class="viewport-mode mode-flicker">
+            <div class="flicker-wrapper">
+                <div class="flicker-subbar">
+                    <button type="button" class="sub-pill active" onclick="setFlickerTarget(this, 'prod')">Show Production</button>
+                    <button type="button" class="sub-pill" onclick="setFlickerTarget(this, 'stg')">Show Staging</button>
+                    <button type="button" class="sub-pill" onclick="setFlickerTarget(this, 'diff')">Show Diff</button>
+                </div>
+                <div class="flicker-viewport">
+                    <img class="flicker-img img-flicker-prod" src="{{PROD_IMAGE_PATH}}" loading="lazy" alt="Prod Flicker" />
+                    <img class="flicker-img img-flicker-stg" src="{{STG_IMAGE_PATH}}" style="display:none;" loading="lazy" alt="Staging Flicker" />
+                    <img class="flicker-img img-flicker-diff" src="{{DIFF_IMAGE_PATH}}" style="display:none;" loading="lazy" alt="Diff Flicker" />
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 4: Diff Only Full-Width View -->
+        <div class="viewport-mode mode-diff-only">
+            <div class="diff-focused-wrap">
+                <img src="{{DIFF_IMAGE_PATH}}" loading="lazy" alt="Single Diff Large" />
+            </div>
+        </div>
+    </div>
+</div>

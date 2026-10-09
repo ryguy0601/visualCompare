@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Regression Report</title>
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-card: #162032;
+            --bg-card-header: #1a2538;
+            --bg-toolbar: #121927;
+            --bg-inner: #0f172a;
+            --bg-viewport: #0d131f;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #38bdf8;
+            --accent-button: #0284c7;
+            --color-pass: #10b981;
+            --color-fail: #e11d48;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        header.report-topbar {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        }
+
+        .report-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .report-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .report-timestamp {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-inner);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px 16px;
+        }
+
+            .stat-card .stat-label {
+                font-size: 12px;
+                text-transform: uppercase;
+                font-weight: 600;
+                color: var(--text-secondary);
+                margin-bottom: 4px;
+            }
+
+            .stat-card .stat-value {
+                font-size: 22px;
+                font-weight: 700;
+            }
+
+            .stat-card.failed .stat-value {
+                color: var(--color-fail);
+            }
+
+            .stat-card.passed .stat-value {
+                color: var(--color-pass);
+            }
+
+            .stat-card.total .stat-value {
+                color: var(--accent-primary);
+            }
+
+        .filter-toolbar {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+
+            .search-box input {
+                width: 100%;
+                background-color: var(--bg-inner);
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                color: var(--text-primary);
+                padding: 8px 12px;
+                font-size: 14px;
+                outline: none;
+            }
+
+                .search-box input:focus {
+                    border-color: var(--accent-primary);
+                }
+
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pill-btn {
+            background-color: var(--bg-inner);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .pill-btn:hover {
+                color: var(--text-primary);
+                border-color: var(--accent-primary);
+            }
+
+            .pill-btn.active {
+                background-color: var(--accent-button);
+                border-color: var(--accent-button);
+                color: #ffffff;
+            }
+
+        .cards-list {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .test-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        }
+
+            .test-card.passed {
+                border-left: 5px solid var(--color-pass);
+            }
+
+            .test-card.failed {
+                border-left: 5px solid var(--color-fail);
+            }
+
+        .card-header {
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-card-header);
+        }
+
+        .header-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .status-pill {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-passed {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: var(--color-pass);
+            border: 1px solid var(--color-pass);
+        }
+
+        .status-failed {
+            background-color: rgba(225, 29, 72, 0.2);
+            color: var(--color-fail);
+            border: 1px solid var(--color-fail);
+        }
+
+        .device-pill {
+            background-color: #334155;
+            color: #cbd5e1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .route-title {
+            font-family: monospace;
+            font-size: 14px;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .header-metrics {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+            .header-metrics strong {
+                color: var(--text-primary);
+            }
+
+        .card-toolbar {
+            padding: 10px 18px;
+            background-color: var(--bg-toolbar);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .view-toggles, .zoom-controls, .swipe-mode-select {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .zoom-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-right: 6px;
+        }
+
+        .view-btn, .sub-pill {
+            background-color: #1e293b;
+            border: 1px solid var(--border-color);
+            color: #94a3b8;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+            .view-btn:hover, .sub-pill:hover {
+                color: #ffffff;
+                border-color: var(--accent-primary);
+            }
+
+            .view-btn.active, .sub-pill.active {
+                background-color: var(--accent-button);
+                color: #ffffff;
+                border-color: var(--accent-button);
+            }
+
+        .btn-reset-zoom {
+            display: none;
+            background-color: #be123c;
+            color: #ffffff;
+            border-color: #e11d48;
+        }
+
+        .external-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .img-link {
+            font-size: 12px;
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+
+            .img-link:hover {
+                text-decoration: underline;
+            }
+
+        .card-body {
+            padding: 18px;
+            background-color: var(--bg-viewport);
+        }
+
+        .viewport-mode {
+            display: none;
+        }
+
+            .viewport-mode.active-view {
+                display: block;
+            }
+
+        /* Synchronized 3-Column Grid */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .image-column {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .column-header {
+            background-color: #1e293b;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            user-select: none;
+        }
+
+        .img-scroll {
+            position: relative;
+            max-height: 700px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #000;
+            cursor: crosshair;
+            user-select: none;
+        }
+
+            .img-scroll img {
+                display: block;
+                width: 100%;
+                height: auto;
+                transform-origin: 0 0;
+                transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+                pointer-events: none;
+                user-select: none;
+            }
+
+        .selection-box {
+            position: absolute;
+            border: 2px dashed #38bdf8;
+            background: rgba(56, 189, 248, 0.18);
+            pointer-events: none;
+            display: none;
+            z-index: 20;
+        }
+
+        /* --- Clip-Path Swipe Slider --- */
+        .swipe-viewport-frame {
+            max-width: 1100px;
+            margin: 0 auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+        }
+
+        /* Pinned Corner Badges */
+        .swipe-indicator-bar {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .swipe-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            border-radius: 999px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            user-select: none;
+        }
+
+        .indicator-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        .indicator-left {
+            background: rgba(2, 132, 199, 0.85);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+            .indicator-left .indicator-dot {
+                background: #ffffff;
+            }
+
+            .indicator-left.is-diff {
+                background: rgba(225, 29, 72, 0.9);
+            }
+
+        .indicator-right {
+            background: rgba(108, 92, 231, 0.85);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+            .indicator-right .indicator-dot {
+                background: #a29bfe;
+            }
+
+        .swipe-scroll-wrap {
+            max-height: 700px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            width: 100%;
+        }
+
+        .swipe-container {
+            position: relative;
+            width: 100%;
+            user-select: none;
+            cursor: ew-resize;
+        }
+
+        .swipe-image-base {
+            position: relative;
+            width: 100%;
+            display: block;
+        }
+
+            .swipe-image-base img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+
+        .swipe-image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            clip-path: inset(0 50% 0 0);
+            will-change: clip-path;
+        }
+
+            .swipe-image-overlay img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+
+        .swipe-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .handle-line {
+            width: 2px;
+            height: 100%;
+            background-color: var(--accent-primary);
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+        }
+
+        .handle-pill {
+            position: sticky;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            background: #1e1e1e;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            user-select: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+            white-space: nowrap;
+        }
+
+        /* Flicker Viewport */
+        .flicker-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .flicker-subbar {
+            background-color: #1e293b;
+            padding: 8px 12px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .flicker-viewport {
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .flicker-img {
+            width: 100%;
+            display: block;
+            height: auto;
+        }
+
+        /* Diff-Only Viewport */
+        .mode-diff-only .diff-focused-wrap {
+            max-height: 700px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: #000;
+        }
+
+        .mode-diff-only img {
+            width: 100%;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header class="report-topbar">
+        <div class="report-title-row">
+            <h1 class="report-title">Visual Regression Suite</h1>
+            <span class="report-timestamp">Executed: 2026-10-09 13:39:29</span>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-label">Total Routes Tested</div>
+                <div class="stat-value">2</div>
+            </div>
+            <div class="stat-card passed">
+                <div class="stat-label">Passed Checks</div>
+                <div class="stat-value">2</div>
+            </div>
+            <div class="stat-card failed">
+                <div class="stat-label">Failed Inconsistencies</div>
+                <div class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Reference Prod URL</div>
+                <div class="stat-value" style="font-size: 13px; font-weight: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://www.injectaferhcp.com</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Candidate Staging URL</div>
+                <div class="stat-value" style="font-size: 13px; font-weight: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">http://localhost:52897</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="filter-toolbar">
+        <div class="search-box">
+            <input type="text" id="route-search" placeholder="Filter by route path..." oninput="filterCards()" />
+        </div>
+        <div class="filter-pills">
+            <button class="pill-btn active" data-filter="all" onclick="setFilter(this, 'all')">All Tests</button>
+            <button class="pill-btn" data-filter="failed" onclick="setFilter(this, 'failed')">Failed Only</button>
+            <button class="pill-btn" data-filter="passed" onclick="setFilter(this, 'passed')">Passed Only</button>
+            <button class="pill-btn" data-filter="desktop" onclick="setFilter(this, 'desktop')">Desktop</button>
+            <button class="pill-btn" data-filter="mobile" onclick="setFilter(this, 'mobile')">Mobile</button>
+        </div>
+    </div>
+
+    <main class="cards-list" id="cards-container">
+        <div class="test-card passed" data-status="passed" data-route="/" data-device="DESKTOP">
+    <div class="card-header">
+        <div class="header-main">
+            <span class="status-pill status-passed">PASSED</span>
+            <span class="device-pill dev-desktop">DESKTOP</span>
+            <span class="route-title" title="/">/</span>
+        </div>
+        <div class="header-metrics">
+            <span class="metric-item"><strong>Diff:</strong> 0.014%</span>
+            <span class="metric-item"><strong>Blocks:</strong> 30</span>
+            <span class="metric-item"><strong>Render:</strong> 35.46s</span>
+        </div>
+    </div>
+
+    <div class="card-toolbar">
+        <div class="view-toggles">
+            <button type="button" class="view-btn active" onclick="switchCardView(this, 'side-by-side')">Side-by-Side (Sync)</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'split-swipe')">Swipe Split</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'flicker')">Flicker Toggle</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'diff-only')">Diff Only</button>
+        </div>
+
+        <!-- Swipe Mode Selector (Prod vs Stg OR Diff vs Stg) -->
+        <div class="swipe-mode-select" style="display: none;">
+            <button type="button" class="sub-pill active" onclick="setSwipeLayer(this, 'prod')">Prod ↔ Stg</button>
+            <button type="button" class="sub-pill" onclick="setSwipeLayer(this, 'diff')">Diff ↔ Stg</button>
+        </div>
+
+        <div class="zoom-controls">
+            <span class="zoom-hint">Drag box to zoom (Esc or click to reset)</span>
+            <button type="button" class="view-btn btn-reset-zoom" onclick="resetCardZoom(this.closest('.test-card'))">Reset Zoom</button>
+        </div>
+        <div class="external-links">
+            <a href="screenshots/root_home_6666cd_desktop_prod.png" target="_blank" class="img-link">Prod PNG</a>
+            <a href="screenshots/root_home_6666cd_desktop_stg.png" target="_blank" class="img-link">Staging PNG</a>
+            <a href="screenshots/root_home_6666cd_desktop_diff.png" target="_blank" class="img-link">Diff PNG</a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <!-- MODE 1: 3-Column Synchronized Side-by-Side -->
+        <div class="viewport-mode mode-side-by-side active-view">
+            <div class="comparison-grid">
+                <div class="image-column">
+                    <div class="column-header">Production (Reference)</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="screenshots/root_home_6666cd_desktop_prod.png" loading="lazy" alt="Production Screenshot" />
+                    </div>
+                </div>
+                <div class="image-column">
+                    <div class="column-header">Staging (Candidate)</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="screenshots/root_home_6666cd_desktop_stg.png" loading="lazy" alt="Staging Screenshot" />
+                    </div>
+                </div>
+                <div class="image-column">
+                    <div class="column-header">Pixel Diff Overlay</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="screenshots/root_home_6666cd_desktop_diff.png" loading="lazy" alt="Pixel Difference" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 2: Scrollable Swipe Split Slider -->
+        <div class="viewport-mode mode-split-swipe">
+            <div class="swipe-viewport-frame">
+                <!-- Pinned Static Badges (Left = Prod, Right = Staging) -->
+                <div class="swipe-indicator-bar">
+                    <span class="swipe-indicator indicator-left">
+                        <span class="indicator-dot"></span>
+                        <span class="indicator-text js-overlay-label">Production (Left)</span>
+                    </span>
+                    <span class="swipe-indicator indicator-right">
+                        <span class="indicator-dot"></span>
+                        <span>Staging (Right)</span>
+                    </span>
+                </div>
+
+                <div class="swipe-scroll-wrap">
+                    <div class="swipe-container">
+                        <!-- Underlay / Right side: STAGING -->
+                        <div class="swipe-image-base">
+                            <img src="screenshots/root_home_6666cd_desktop_stg.png" loading="lazy" alt="Staging Base" />
+                        </div>
+
+                        <!-- Clipped Overlay / Left side: PRODUCTION -->
+                        <div class="swipe-image-overlay">
+                            <img class="swipe-overlay-img"
+                                 src="screenshots/root_home_6666cd_desktop_prod.png"
+                                 data-prod="screenshots/root_home_6666cd_desktop_prod.png"
+                                 data-diff="screenshots/root_home_6666cd_desktop_diff.png"
+                                 loading="lazy"
+                                 alt="Comparison Overlay" />
+                        </div>
+
+                        <!-- Draggable Vertical Line + Slider Circle -->
+                        <div class="swipe-handle">
+                            <div class="handle-line"></div>
+                            <div class="handle-circle">&#x2194;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 3: Flicker / Toggle Compare -->
+        <div class="viewport-mode mode-flicker">
+            <div class="flicker-wrapper">
+                <div class="flicker-subbar">
+                    <button type="button" class="sub-pill active" onclick="setFlickerTarget(this, 'prod')">Show Production</button>
+                    <button type="button" class="sub-pill" onclick="setFlickerTarget(this, 'stg')">Show Staging</button>
+                    <button type="button" class="sub-pill" onclick="setFlickerTarget(this, 'diff')">Show Diff</button>
+                </div>
+                <div class="flicker-viewport">
+                    <img class="flicker-img img-flicker-prod" src="screenshots/root_home_6666cd_desktop_prod.png" loading="lazy" alt="Prod Flicker" />
+                    <img class="flicker-img img-flicker-stg" src="screenshots/root_home_6666cd_desktop_stg.png" style="display:none;" loading="lazy" alt="Staging Flicker" />
+                    <img class="flicker-img img-flicker-diff" src="screenshots/root_home_6666cd_desktop_diff.png" style="display:none;" loading="lazy" alt="Diff Flicker" />
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 4: Diff Only Full-Width View -->
+        <div class="viewport-mode mode-diff-only">
+            <div class="diff-focused-wrap">
+                <img src="screenshots/root_home_6666cd_desktop_diff.png" loading="lazy" alt="Single Diff Large" />
+            </div>
+        </div>
+    </div>
+</div>
+<div class="test-card passed" data-status="passed" data-route="/" data-device="MOBILE">
+    <div class="card-header">
+        <div class="header-main">
+            <span class="status-pill status-passed">PASSED</span>
+            <span class="device-pill dev-mobile">MOBILE</span>
+            <span class="route-title" title="/">/</span>
+        </div>
+        <div class="header-metrics">
+            <span class="metric-item"><strong>Diff:</strong> 0.137%</span>
+            <span class="metric-item"><strong>Blocks:</strong> 37</span>
+            <span class="metric-item"><strong>Render:</strong> 28.63s</span>
+        </div>
+    </div>
+
+    <div class="card-toolbar">
+        <div class="view-toggles">
+            <button type="button" class="view-btn active" onclick="switchCardView(this, 'side-by-side')">Side-by-Side (Sync)</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'split-swipe')">Swipe Split</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'flicker')">Flicker Toggle</button>
+            <button type="button" class="view-btn" onclick="switchCardView(this, 'diff-only')">Diff Only</button>
+        </div>
+
+        <!-- Swipe Mode Selector (Prod vs Stg OR Diff vs Stg) -->
+        <div class="swipe-mode-select" style="display: none;">
+            <button type="button" class="sub-pill active" onclick="setSwipeLayer(this, 'prod')">Prod ↔ Stg</button>
+            <button type="button" class="sub-pill" onclick="setSwipeLayer(this, 'diff')">Diff ↔ Stg</button>
+        </div>
+
+        <div class="zoom-controls">
+            <span class="zoom-hint">Drag box to zoom (Esc or click to reset)</span>
+            <button type="button" class="view-btn btn-reset-zoom" onclick="resetCardZoom(this.closest('.test-card'))">Reset Zoom</button>
+        </div>
+        <div class="external-links">
+            <a href="screenshots/root_home_6666cd_mobile_prod.png" target="_blank" class="img-link">Prod PNG</a>
+            <a href="screenshots/root_home_6666cd_mobile_stg.png" target="_blank" class="img-link">Staging PNG</a>
+            <a href="screenshots/root_home_6666cd_mobile_diff.png" target="_blank" class="img-link">Diff PNG</a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <!-- MODE 1: 3-Column Synchronized Side-by-Side -->
+        <div class="viewport-mode mode-side-by-side active-view">
+            <div class="comparison-grid">
+                <div class="image-column">
+                    <div class="column-header">Production (Reference)</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="screenshots/root_home_6666cd_mobile_prod.png" loading="lazy" alt="Production Screenshot" />
+                    </div>
+                </div>
+                <div class="image-column">
+                    <div class="column-header">Staging (Candidate)</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="screenshots/root_home_6666cd_mobile_stg.png" loading="lazy" alt="Staging Screenshot" />
+                    </div>
+                </div>
+                <div class="image-column">
+                    <div class="column-header">Pixel Diff Overlay</div>
+                    <div class="img-wrap img-scroll">
+                        <div class="selection-box"></div>
+                        <img src="screenshots/root_home_6666cd_mobile_diff.png" loading="lazy" alt="Pixel Difference" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 2: Scrollable Swipe Split Slider -->
+        <div class="viewport-mode mode-split-swipe">
+            <div class="swipe-viewport-frame">
+                <!-- Pinned Static Badges (Left = Prod, Right = Staging) -->
+                <div class="swipe-indicator-bar">
+                    <span class="swipe-indicator indicator-left">
+                        <span class="indicator-dot"></span>
+                        <span class="indicator-text js-overlay-label">Production (Left)</span>
+                    </span>
+                    <span class="swipe-indicator indicator-right">
+                        <span class="indicator-dot"></span>
+                        <span>Staging (Right)</span>
+                    </span>
+                </div>
+
+                <div class="swipe-scroll-wrap">
+                    <div class="swipe-container">
+                        <!-- Underlay / Right side: STAGING -->
+                        <div class="swipe-image-base">
+                            <img src="screenshots/root_home_6666cd_mobile_stg.png" loading="lazy" alt="Staging Base" />
+                        </div>
+
+                        <!-- Clipped Overlay / Left side: PRODUCTION -->
+                        <div class="swipe-image-overlay">
+                            <img class="swipe-overlay-img"
+                                 src="screenshots/root_home_6666cd_mobile_prod.png"
+                                 data-prod="screenshots/root_home_6666cd_mobile_prod.png"
+                                 data-diff="screenshots/root_home_6666cd_mobile_diff.png"
+                                 loading="lazy"
+                                 alt="Comparison Overlay" />
+                        </div>
+
+                        <!-- Draggable Vertical Line + Slider Circle -->
+                        <div class="swipe-handle">
+                            <div class="handle-line"></div>
+                            <div class="handle-circle">&#x2194;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 3: Flicker / Toggle Compare -->
+        <div class="viewport-mode mode-flicker">
+            <div class="flicker-wrapper">
+                <div class="flicker-subbar">
+                    <button type="button" class="sub-pill active" onclick="setFlickerTarget(this, 'prod')">Show Production</button>
+                    <button type="button" class="sub-pill" onclick="setFlickerTarget(this, 'stg')">Show Staging</button>
+                    <button type="button" class="sub-pill" onclick="setFlickerTarget(this, 'diff')">Show Diff</button>
+                </div>
+                <div class="flicker-viewport">
+                    <img class="flicker-img img-flicker-prod" src="screenshots/root_home_6666cd_mobile_prod.png" loading="lazy" alt="Prod Flicker" />
+                    <img class="flicker-img img-flicker-stg" src="screenshots/root_home_6666cd_mobile_stg.png" style="display:none;" loading="lazy" alt="Staging Flicker" />
+                    <img class="flicker-img img-flicker-diff" src="screenshots/root_home_6666cd_mobile_diff.png" style="display:none;" loading="lazy" alt="Diff Flicker" />
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 4: Diff Only Full-Width View -->
+        <div class="viewport-mode mode-diff-only">
+            <div class="diff-focused-wrap">
+                <img src="screenshots/root_home_6666cd_mobile_diff.png" loading="lazy" alt="Single Diff Large" />
+            </div>
+        </div>
+    </div>
+</div>
+    </main>
+
+    <script>
+        let currentFilter = 'all';
+
+        // 1. Synchronized Scroll (Supports dynamic heights and layout shifts)
+        function initSynchronizedScroll() {
+            document.querySelectorAll('.comparison-grid').forEach(grid => {
+                const scrollContainers = Array.from(grid.querySelectorAll('.img-scroll'));
+                let isAnimating = false;
+                let activeDriver = null;
+                let idleTimer = null;
+
+                const state = {
+                    currentY: 0,
+                    targetY: 0,
+                    maxScroll: 0
+                };
+
+                const getMaxScroll = () => {
+                    return Math.max(0, ...scrollContainers.map(c => c.scrollHeight - c.clientHeight));
+                };
+
+                const renderLoop = () => {
+                    const diff = state.targetY - state.currentY;
+
+                    if (Math.abs(diff) < 0.5) {
+                        state.currentY = state.targetY;
+                        scrollContainers.forEach(container => {
+                            if (container.scrollTop !== state.currentY) {
+                                container.scrollTop = state.currentY;
+                            }
+                        });
+                        isAnimating = false;
+                        return;
+                    }
+
+                    state.currentY += diff * 0.25;
+
+                    scrollContainers.forEach(container => {
+                        if (container !== activeDriver) {
+                            container.scrollTop = state.currentY;
+                        }
+                    });
+
+                    requestAnimationFrame(renderLoop);
+                };
+
+                const startLoop = () => {
+                    if (!isAnimating) {
+                        isAnimating = true;
+                        requestAnimationFrame(renderLoop);
+                    }
+                };
+
+                scrollContainers.forEach(container => {
+                    container.addEventListener('wheel', (e) => {
+                        e.preventDefault();
+                        activeDriver = null;
+                        state.maxScroll = getMaxScroll();
+                        state.targetY = Math.max(0, Math.min(state.maxScroll, state.targetY + e.deltaY));
+                        startLoop();
+                    }, { passive: false });
+
+                    container.addEventListener('scroll', () => {
+                        if (!activeDriver) activeDriver = container;
+
+                        if (activeDriver === container) {
+                            state.currentY = container.scrollTop;
+                            state.targetY = container.scrollTop;
+
+                            scrollContainers.forEach(other => {
+                                if (other !== container) other.scrollTop = state.currentY;
+                            });
+
+                            clearTimeout(idleTimer);
+                            idleTimer = setTimeout(() => { activeDriver = null; }, 80);
+                        }
+                    }, { passive: true });
+                });
+            });
+        }
+
+        // 2. Marquee Drag-To-Zoom
+        function initMarqueeZoom() {
+            document.querySelectorAll('.test-card').forEach(card => {
+                const grid = card.querySelector('.comparison-grid');
+                if (!grid) return;
+
+                const scrollContainers = grid.querySelectorAll('.img-scroll');
+                const images = grid.querySelectorAll('.img-scroll img');
+                const boxes = grid.querySelectorAll('.selection-box');
+
+                let isDragging = false;
+                let startX = 0;
+                let startY = 0;
+                let activeContainer = null;
+
+                card.dataset.isZoomed = "false";
+
+                scrollContainers.forEach(container => {
+                    container.addEventListener('mousedown', (e) => {
+                        if (e.button !== 0 || e.offsetX > container.clientWidth) return;
+
+                        if (card.dataset.isZoomed === "true") {
+                            resetCardZoom(card);
+                            return;
+                        }
+
+                        isDragging = true;
+                        activeContainer = container;
+
+                        const rect = container.getBoundingClientRect();
+                        startX = e.clientX - rect.left;
+                        startY = e.clientY - rect.top;
+
+                        boxes.forEach(b => {
+                            b.style.left = `${startX}px`;
+                            b.style.top = `${startY + container.scrollTop}px`;
+                            b.style.width = '0px';
+                            b.style.height = '0px';
+                            b.style.display = 'block';
+                        });
+                    });
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (!isDragging || !activeContainer) return;
+
+                    const rect = activeContainer.getBoundingClientRect();
+                    const curX = Math.max(0, Math.min(activeContainer.clientWidth, e.clientX - rect.left));
+                    const curY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+                    const left = Math.min(startX, curX);
+                    const top = Math.min(startY, curY) + activeContainer.scrollTop;
+                    const width = Math.abs(curX - startX);
+                    const height = Math.abs(curY - startY);
+
+                    boxes.forEach(b => {
+                        b.style.left = `${left}px`;
+                        b.style.top = `${top}px`;
+                        b.style.width = `${width}px`;
+                        b.style.height = `${height}px`;
+                    });
+                });
+
+                window.addEventListener('mouseup', () => {
+                    if (!isDragging || !activeContainer) return;
+                    isDragging = false;
+
+                    const box = activeContainer.querySelector('.selection-box');
+                    const boxW = parseFloat(box.style.width || "0");
+                    const boxH = parseFloat(box.style.height || "0");
+                    const boxLeft = parseFloat(box.style.left || "0");
+                    const boxTop = parseFloat(box.style.top || "0");
+
+                    boxes.forEach(b => b.style.display = 'none');
+
+                    if (boxW > 25 && boxH > 25) {
+                        const img = activeContainer.querySelector('img');
+                        const relX = (boxLeft + boxW / 2) / img.offsetWidth;
+                        const relY = (boxTop + boxH / 2) / img.offsetHeight;
+
+                        const scaleX = activeContainer.clientWidth / boxW;
+                        const scaleY = activeContainer.clientHeight / boxH;
+                        const targetScale = Math.min(Math.max(scaleX, scaleY), 8);
+
+                        images.forEach(i => {
+                            i.style.transformOrigin = `${relX * 100}% ${relY * 100}%`;
+                            i.style.transform = `scale(${targetScale.toFixed(2)})`;
+                        });
+
+                        card.dataset.isZoomed = "true";
+                        const rBtn = card.querySelector('.btn-reset-zoom');
+                        if (rBtn) rBtn.style.display = 'inline-block';
+                    }
+
+                    activeContainer = null;
+                });
+            });
+        }
+
+        function resetCardZoom(card) {
+            const images = card.querySelectorAll('.comparison-grid .img-scroll img');
+            images.forEach(img => {
+                img.style.transform = 'none';
+                img.style.transformOrigin = '0 0';
+            });
+            card.dataset.isZoomed = "false";
+            const rBtn = card.querySelector('.btn-reset-zoom');
+            if (rBtn) rBtn.style.display = 'none';
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") {
+                document.querySelectorAll('.test-card').forEach(card => resetCardZoom(card));
+            }
+        });
+
+        // 3. View Mode Switching
+        function switchCardView(btn, viewName) {
+            const card = btn.closest('.test-card');
+            card.querySelectorAll('.view-toggles .view-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            card.querySelectorAll('.viewport-mode').forEach(vp => vp.classList.remove('active-view'));
+
+            const target = card.querySelector(`.mode-${viewName}`);
+            if (target) target.classList.add('active-view');
+
+            const zoomCtrls = card.querySelector('.zoom-controls');
+            if (zoomCtrls) zoomCtrls.style.display = (viewName === 'side-by-side') ? 'flex' : 'none';
+
+            const swipeModeSelect = card.querySelector('.swipe-mode-select');
+            if (swipeModeSelect) swipeModeSelect.style.display = (viewName === 'split-swipe') ? 'flex' : 'none';
+        }
+
+        // 4. Swipe Layer Switcher (Prod vs Stg OR Diff vs Stg)
+        function setSwipeLayer(btn, layerType) {
+            const card = btn.closest('.test-card');
+            card.querySelectorAll('.swipe-mode-select .sub-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const overlayImg = card.querySelector('.swipe-overlay-img');
+            const leftLabel = card.querySelector('.js-overlay-label');
+            const indicatorLeft = card.querySelector('.indicator-left');
+            if (!overlayImg) return;
+
+            if (layerType === 'diff') {
+                overlayImg.src = overlayImg.getAttribute('data-diff');
+                if (leftLabel) leftLabel.innerText = 'Pixel Diff';
+                if (indicatorLeft) indicatorLeft.classList.add('is-diff');
+            } else {
+                overlayImg.src = overlayImg.getAttribute('data-prod');
+                if (leftLabel) leftLabel.innerText = 'Production';
+                if (indicatorLeft) indicatorLeft.classList.remove('is-diff');
+            }
+        }
+
+        // 5. Flicker Target Switcher
+        function setFlickerTarget(btn, targetType) {
+            const wrapper = btn.closest('.flicker-wrapper');
+            wrapper.querySelectorAll('.sub-pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+
+            const pImg = wrapper.querySelector('.img-flicker-prod');
+            const sImg = wrapper.querySelector('.img-flicker-stg');
+            const dImg = wrapper.querySelector('.img-flicker-diff');
+
+            if (pImg) pImg.style.display = (targetType === 'prod') ? 'block' : 'none';
+            if (sImg) sImg.style.display = (targetType === 'stg') ? 'block' : 'none';
+            if (dImg) dImg.style.display = (targetType === 'diff') ? 'block' : 'none';
+        }
+
+        // 6. Sub-Pixel Perfect Swipe Dragging (Active over whole image container)
+        let activeSwipeContainer = null;
+
+        function startSwipeInteraction(e, container) {
+            activeSwipeContainer = container;
+            const rect = container.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            applySwipePosition(container, clientX - rect.left, rect.width);
+        }
+
+        function applySwipePosition(container, x, width) {
+            if (x < 0) x = 0;
+            if (x > width) x = width;
+            const pct = (x / width) * 100;
+            const overlay = container.querySelector('.swipe-image-overlay');
+            const handle = container.querySelector('.swipe-handle');
+
+            if (overlay && handle) {
+                overlay.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+                handle.style.left = `${pct}%`;
+            }
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (!activeSwipeContainer) return;
+            const rect = activeSwipeContainer.getBoundingClientRect();
+            applySwipePosition(activeSwipeContainer, e.clientX - rect.left, rect.width);
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!activeSwipeContainer || e.touches.length === 0) return;
+            const rect = activeSwipeContainer.getBoundingClientRect();
+            applySwipePosition(activeSwipeContainer, e.touches[0].clientX - rect.left, rect.width);
+        }, { passive: true });
+
+        window.addEventListener('mouseup', () => { activeSwipeContainer = null; });
+        window.addEventListener('touchend', () => { activeSwipeContainer = null; });
+
+        // 7. Test Filtering
+        function setFilter(btn, filterType) {
+            document.querySelectorAll('.filter-pills .pill-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = filterType;
+            filterCards();
+        }
+
+        function filterCards() {
+            const searchVal = (document.getElementById('route-search').value || '').toLowerCase();
+            const cards = document.querySelectorAll('.test-card');
+
+            cards.forEach(card => {
+                const route = (card.getAttribute('data-route') || '').toLowerCase();
+                const status = (card.getAttribute('data-status') || '').toLowerCase();
+                const device = (card.getAttribute('data-device') || '').toLowerCase();
+
+                const matchesText = route.includes(searchVal);
+                let matchesStatus = true;
+
+                if (currentFilter === 'failed') {
+                    matchesStatus = (status === 'failed');
+                } else if (currentFilter === 'passed') {
+                    matchesStatus = (status === 'passed');
+                } else if (currentFilter === 'desktop') {
+                    matchesStatus = (device === 'desktop');
+                } else if (currentFilter === 'mobile') {
+                    matchesStatus = (device === 'mobile');
+                }
+
+                card.style.display = (matchesText && matchesStatus) ? 'block' : 'none';
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initSynchronizedScroll();
+            initMarqueeZoom();
+
+            // Bind full-surface swipe scrubbing to every swipe card
+            document.querySelectorAll('.swipe-container').forEach(container => {
+                container.addEventListener('mousedown', (e) => {
+                    if (e.button === 0) startSwipeInteraction(e, container);
+                });
+                container.addEventListener('touchstart', (e) => {
+                    startSwipeInteraction(e, container);
+                }, { passive: true });
+            });
+        });
+    </script>
+</body>
+</html>

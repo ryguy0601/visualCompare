@@ -1,0 +1,60 @@
+/* ==========================================================================
+   1. ONETRUST BANNER, PREFERENCE CENTER, & MODALS
+   ========================================================================== */
+/*#onetrust-consent-sdk,
+#onetrust-banner-sdk,
+.onetrust-pc-dark-filter,
+#ot-pc-sdk,
+#ot-sdk-btn-floating,
+.ot-sdk-container,
+.ot-fade-in {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    clip: rect(0, 0, 0, 0) !important;
+    height: 0 !important;
+    width: 0 !important;
+}*/
+
+/* ==========================================================================
+   2. US HEALTHCARE PROFESSIONAL (HCP) GATE MODAL & BACKDROPS
+   ========================================================================== */
+/*.modal.show,
+.modal-backdrop,
+.modal-backdrop.show,
+#hcp-gate-modal,
+[id*="hcp-gate"],
+#hcp-gate-patient-links {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}*/
+
+/* ==========================================================================
+   3. UNLOCK SCROLL & PREVENT HORIZONTAL SCROLLBAR FLICKER
+   ========================================================================== */
+html, body {
+    overflow-x: hidden !important;
+    scrollbar-width: none !important;
+    position: static !important;
+    height: auto !important;
+}
+
+::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+}
+
+/* ==========================================================================
+   4. FREEZE ANIMATIONS & CARET CURSORS FOR DETERMINISTIC DIFFING
+   ========================================================================== */
+*, *::before, *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    caret-color: transparent !important;
+}
